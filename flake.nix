@@ -16,12 +16,28 @@
       in
       {
         devShells.default = pkgs.mkShell {
-          packages = [
-            pkgs.cargo
-            pkgs.rustfmt
-            pkgs.clippy
-            pkgs.rustc
+          packages = with pkgs; [
+            cargo
+            rustfmt
+            clippy
+            rustc
+
+            openssl
+            pkg-config
+
+            sqlite
           ];
+          shellHook = ''
+            mkdir -p instance
+            if [ ! -f instance/dev.sqlite3 ]; then
+               echo "Initializing SQLite database at instance/dev.sqlite3"
+               sqlite3 instance/dev.sqlite3 < instance/init.sql
+            fi
+          '';
+          env = {
+            DATABASE_URL = "sqlite::";
+            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+          };
         };
       }
     );

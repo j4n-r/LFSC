@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+axum = "0.8.3"
+sqlx = "0.8.5"
+tokyo = "1.0.0"
