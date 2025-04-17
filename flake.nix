@@ -30,12 +30,14 @@
           shellHook = ''
             mkdir -p instance
             if [ ! -f instance/dev.sqlite3 ]; then
-               echo "Initializing SQLite database at instance/dev.sqlite3"
+               echo
+               echo "Initializing SQLite database at instance/dev.sqlite3"  
                sqlite3 instance/dev.sqlite3 < instance/init.sql
+               echo
             fi
           '';
           env = {
-            DATABASE_URL = "sqlite::";
+            DATABASE_URL = "sqlite:../instance/dev.sqlite3"; # relative path from sc-core/
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
           };
         };
