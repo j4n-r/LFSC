@@ -26,6 +26,8 @@
             pkg-config
 
             sqlite
+
+            websocat
           ];
           shellHook = ''
             mkdir -p instance
