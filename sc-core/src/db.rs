@@ -1,15 +1,22 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
+use uuid::Uuid;
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize)]
-struct Message_data {
+struct MessageData {
     id: String,
-    send_id: String,
-    recv_id: String,
+    message: Msg,
     status: Status,
     sent_at: NaiveDateTime,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Msg {
+    send_id: String,
+    recv_id: String,
+    text: String,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -40,3 +47,15 @@ pub async fn get_user(pool: Arc<SqlitePool>) -> Result<User, sqlx::Error> {
 
     Ok(user)
 }
+
+pub async fn save_message(pool: Arc<SqlitePool>, msg: Msg) ->Result<MessageData, sqlx::Error>{
+    let msg_data = {
+        id: Uuid::new_v4(),
+        msg: msg,"smt",
+        status: Status::Received,
+        sent_at: chrono::naive::NaiveDateTime::new(date, time)
+        
+
+    }
+}
+

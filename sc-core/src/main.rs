@@ -3,12 +3,10 @@ use std::{
     collections::HashMap, env,  net::SocketAddr, sync::{Arc, Mutex}
 };
 
-use chrono::{ NaiveDateTime };
 
 use futures_channel::mpsc::{unbounded, UnboundedSender};
 use futures_util::{future, pin_mut, stream::TryStreamExt, StreamExt};
 
-use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::tungstenite::protocol::Message;
@@ -62,6 +60,7 @@ async fn handle_connection(
 
     let receive_from_others = rx.map(Ok).forward(outgoing);
 
+
     pin_mut!(broadcast_incoming, receive_from_others);
     future::select(broadcast_incoming, receive_from_others).await;
 
@@ -76,12 +75,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let state = PeerMap::new(Mutex::new(HashMap::new()));
 
-    // Create the event loop and TCP listener we'll accept connections on.
     let try_socket = TcpListener::bind(&addr).await;
     let listener = try_socket.expect("Failed to bind");
     println!("Listening on: {}", addr);
 
-    // Let's spawn the handling of each connection in a separate task.
     while let Ok((stream, addr)) = listener.accept().await {
         tokio::spawn(handle_connection(state.clone(), pool.clone(), stream, addr));
     }
