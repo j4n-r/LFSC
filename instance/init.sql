@@ -1,23 +1,23 @@
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY,   
-    username TEXT,
-    created_at TIMESTAMP    
+    id UUID PRIMARY KEY NOT NULL,   
+    username TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS devices (
-    id UUID PRIMARY KEY,
-    user_id UUID,
-    public_key TEXT,
-    last_seen TIMESTAMP,
+    id UUID PRIMARY KEY NOT NULL,
+    user_id UUID NOT NULL,
+    public_key TEXT NOT NULL,
+    last_seen TIMESTAMP NOT NULL,
     FOREIGN KEY(user_id) REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS message_data (
-    id UUID PRIMARY KEY,
-    sender_id UUID,
-    receiver_id UUID,
-    status TEXT,
-    sent_at TIMESTAMP,
+    id UUID PRIMARY KEY NOT NULL,
+    sender_id UUID NOT NULL,
+    receiver_id UUID NOT NULL,
+    status TEXT NOT NULL,
+    sent_at TIMESTAMP NOT NULL,
     FOREIGN KEY(sender_id)   REFERENCES users(id),
     FOREIGN KEY(receiver_id) REFERENCES users(id)
 );
