@@ -1,38 +1,26 @@
 mod db;
 use std::{
-    collections::HashMap,
-    env,
-    net::SocketAddr,
-    sync::{Arc, Mutex},
+    collections::HashMap, env,  net::SocketAddr, sync::{Arc, Mutex}
 };
 
-use chrono::{ NaiveDateTime, Utc};
-use futures_channel::mpsc::UnboundedSender;
-use futures_util::{SinkExt, StreamExt};
+use chrono::{ NaiveDateTime };
+
+use futures_channel::mpsc::{unbounded, UnboundedSender};
+use futures_util::{future, pin_mut, stream::TryStreamExt, StreamExt};
 
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::tungstenite::protocol::Message;
-use uuid::Uuid;
 
 type Tx = UnboundedSender<Message>;
+//TODO change this to use the UserConn
 type PeerMap = Arc<Mutex<HashMap<SocketAddr, Tx>>>;
 
-#[derive(Serialize, Deserialize)]
-struct Msg {
+struct UserConn {
     id: String,
-    send_id: String,
-    recv_id: String,
-    status: Status,
-    sent_at: NaiveDateTime,
-}
-
-#[derive(Deserialize, Serialize)]
-enum Status {
-    Send,
-    Received,
-    Bufferred,
+    name: String,
+    addr: SocketAddr,
 }
 
 async fn handle_connection(
@@ -48,16 +36,37 @@ async fn handle_connection(
         .expect("Error during the websocket handshake occurred");
     println!("WebSocket connection established: {}", addr);
 
-    let (mut write, read) = ws_stream.split();
+    // Insert the write part of this peer to the peer map.
+    // tx=transmit, rx=receive
+    let (tx, rx) = unbounded();
 
-    let user = db::get_user(pool.clone()).await.unwrap();
-    let json = serde_json::to_string(&user).unwrap();
+    // TODO check how to add the user connection into the map (look up the user after the first message) and do not add them after the first time again
+    peer_map.lock().unwrap().insert(addr, tx);
 
-    let msg_to_send = Message::text(json);
-    write
-        .send(msg_to_send)
-        .await
-        .expect("failed to forward message");
+    let (outgoing, incoming) = ws_stream.split();
+
+    let broadcast_incoming = incoming.try_for_each(|msg| {
+        println!("Received a message from {}: {}", addr, msg.to_text().unwrap());
+        let peers = peer_map.lock().unwrap();
+
+        // We want to broadcast the message to everyone except ourselves.
+        let broadcast_recipients =
+            peers.iter().filter(|(peer_addr, _)| peer_addr != &&addr).map(|(_, ws_sink)| ws_sink);
+
+        for recp in broadcast_recipients {
+            recp.unbounded_send(msg.clone()).unwrap();
+        }
+
+        future::ok(())
+    });
+
+    let receive_from_others = rx.map(Ok).forward(outgoing);
+
+    pin_mut!(broadcast_incoming, receive_from_others);
+    future::select(broadcast_incoming, receive_from_others).await;
+
+    println!("{} disconnected", &addr);
+    peer_map.lock().unwrap().remove(&addr);
 }
 
 #[tokio::main]

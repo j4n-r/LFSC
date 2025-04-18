@@ -4,6 +4,22 @@ use sqlx::SqlitePool;
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize)]
+struct Message_data {
+    id: String,
+    send_id: String,
+    recv_id: String,
+    status: Status,
+    sent_at: NaiveDateTime,
+}
+
+#[derive(Deserialize, Serialize)]
+enum Status {
+    Send,
+    Received,
+    Bufferred,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct User {
     id: String,
     username: String,
@@ -17,10 +33,9 @@ pub async fn get_user(pool: Arc<SqlitePool>) -> Result<User, sqlx::Error> {
             SELECT id, username, created_at
             FROM users
             ORDER BY created_at DESC
-            LIMIT 1
             "#
     )
-    .fetch_one(&*pool) // deref Arc to &SqlitePool
+    .fetch_one(&*pool)
     .await?;
 
     Ok(user)

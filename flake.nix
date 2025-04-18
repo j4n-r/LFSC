@@ -13,6 +13,14 @@
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        ws-send = pkgs.writeShellApplication {
+          name = "ws-test";
+          text = builtins.readFile ./scripts/ws-send.sh;
+        };
+        ws-recv = pkgs.writeShellApplication {
+          name = "ws-recv";
+          text = builtins.readFile ./scripts/ws-recv.sh;
+        };
       in
       {
         devShells.default = pkgs.mkShell {
@@ -28,6 +36,7 @@
             sqlite
 
             websocat
+            jq
           ];
           shellHook = ''
             mkdir -p instance
@@ -42,6 +51,10 @@
             DATABASE_URL = "sqlite:../instance/dev.sqlite3"; # relative path from sc-core/
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
           };
+        };
+        packages = {
+          ws-send = ws-send;
+          ws-recv = ws-recv;
         };
       }
     );
