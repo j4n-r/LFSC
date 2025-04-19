@@ -1,36 +1,72 @@
-use chrono::NaiveDateTime;
+use chrono::Local;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize)]
-struct MessageData {
+pub struct MessageData {
     id: String,
-    message: Msg,
+    sender_id:String,
+    target_type: TargetType,
+    target_id: String,
     status: Status,
-    sent_at: NaiveDateTime,
+    content: String,
+    sent_from_client: String,
+    sent_from_server: String
 }
 
 #[derive(Serialize, Deserialize)]
-struct Msg {
-    send_id: String,
-    recv_id: String,
-    text: String,
+pub struct WsMessage {
+    pub message_type: MessageType,
+    pub payload: Payload,
+    pub meta: Meta
 }
 
 #[derive(Deserialize, Serialize)]
-enum Status {
+pub struct Payload {
+    pub target_type: TargetType,
+    pub target_id: String,
+    pub content: String
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct Meta {
+    pub message_id: String,
+    pub sender_id: String,
+    pub timestamp: String, // sent_from_client
+}
+
+#[derive(sqlx::Type,Deserialize, Serialize)]
+#[sqlx(type_name = "TEXT")]       
+#[sqlx(rename_all = "lowercase")]  
+pub enum Status {
     Send,
     Received,
     Bufferred,
 }
 
+#[derive(sqlx::Type,Deserialize, Serialize)]
+#[sqlx(type_name = "TEXT")]       
+#[sqlx(rename_all = "lowercase")]  
+pub enum TargetType {
+    User,
+    Group
+}
+
+#[derive(sqlx::Type,Deserialize, Serialize)]
+#[sqlx(type_name = "TEXT")]       
+#[sqlx(rename_all = "lowercase")]  
+pub enum MessageType {
+    ChatMessage,
+    // ChatTyping,
+    // File,
+}
 #[derive(Serialize, Deserialize)]
 pub struct User {
     id: String,
     username: String,
-    created_at: NaiveDateTime,
+    created_at: String,
 }
 
 pub async fn get_user(pool: Arc<SqlitePool>) -> Result<User, sqlx::Error> {
@@ -48,14 +84,39 @@ pub async fn get_user(pool: Arc<SqlitePool>) -> Result<User, sqlx::Error> {
     Ok(user)
 }
 
-pub async fn save_message(pool: Arc<SqlitePool>, msg: Msg) ->Result<MessageData, sqlx::Error>{
-    let msg_data = {
-        id: Uuid::new_v4(),
-        msg: msg,"smt",
+pub async fn save_message(
+    pool: &SqlitePool,
+    msg: WsMessage,
+) -> Result<MessageData, sqlx::Error> {
+
+    let msg_data = MessageData {
+        id: Uuid::new_v4().to_string(),
+        sender_id: msg.meta.sender_id,
+        target_type: msg.payload.target_type,
+        target_id: msg.payload.target_id,
         status: Status::Received,
-        sent_at: chrono::naive::NaiveDateTime::new(date, time)
-        
+        content: msg.payload.content,
+        sent_from_client: msg.meta.timestamp,
+        sent_from_server: Local::now().naive_utc().to_string()
+    };
 
-    }
+    sqlx::query!(
+        r#"
+        INSERT INTO messages (
+            id, sender_id, target_type, target_id, status, content, sent_from_client, sent_from_server
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        "#,
+        msg_data.id,
+        msg_data.sender_id,
+        msg_data.target_type,
+        msg_data.target_id,
+        msg_data.status,
+        msg_data.content,
+        msg_data.sent_from_client,
+        msg_data.sent_from_server,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(msg_data)
 }
-
