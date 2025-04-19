@@ -16,45 +16,50 @@ pub struct MessageData {
     sent_from_server: String
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct WsMessage {
     pub message_type: MessageType,
     pub payload: Payload,
     pub meta: Meta
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Payload {
     pub target_type: TargetType,
     pub target_id: String,
     pub content: String
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Meta {
     pub message_id: String,
     pub sender_id: String,
     pub timestamp: String, // sent_from_client
 }
 
-#[derive(sqlx::Type,Deserialize, Serialize)]
+#[derive(sqlx::Type,Deserialize, Serialize, Debug)]
 #[sqlx(type_name = "TEXT")]       
 #[sqlx(rename_all = "lowercase")]  
+#[serde(rename_all = "camelCase")]
 pub enum Status {
     Send,
     Received,
     Bufferred,
 }
 
-#[derive(sqlx::Type,Deserialize, Serialize)]
+#[derive(sqlx::Type,Deserialize, Serialize, Debug, Clone)]
 #[sqlx(type_name = "TEXT")]       
 #[sqlx(rename_all = "lowercase")]  
+#[serde(rename_all = "camelCase")]
 pub enum TargetType {
     User,
     Group
 }
 
-#[derive(sqlx::Type,Deserialize, Serialize)]
+#[derive(sqlx::Type,Deserialize, Serialize, Debug, Clone)]
 #[sqlx(type_name = "TEXT")]       
 #[sqlx(rename_all = "lowercase")]  
 pub enum MessageType {

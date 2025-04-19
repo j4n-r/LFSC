@@ -15,11 +15,11 @@
         pkgs = nixpkgs.legacyPackages.${system};
         ws-send = pkgs.writeShellApplication {
           name = "ws-test";
-          text = builtins.readFile ./scripts/ws-send.sh;
+          text = builtins.readFile ./scripts/ws-send.py;
         };
         ws-recv = pkgs.writeShellApplication {
           name = "ws-recv";
-          text = builtins.readFile ./scripts/ws-recv.sh;
+          text = builtins.readFile ./scripts/ws-recv.py;
         };
       in
       {
@@ -37,6 +37,9 @@
 
             websocat
             jq
+
+            pkgs.python312
+            pkgs.python312Packages.websockets
           ];
           shellHook = ''
             mkdir -p instance

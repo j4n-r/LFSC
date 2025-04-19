@@ -1,23 +1,28 @@
 mod db;
 use std::{
-    collections::HashMap, env,  net::SocketAddr, sync::{Arc, Mutex}
+    collections::HashMap,
+    env,
+    future::Future,
+    net::SocketAddr,
+    sync::{Arc, Mutex},
 };
 
-
+use db::WsMessage;
 use futures_channel::mpsc::{unbounded, UnboundedSender};
 use futures_util::{future, pin_mut, stream::TryStreamExt, StreamExt};
 
+use serde_json::{to_string, Error};
 use sqlx::SqlitePool;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::tungstenite::protocol::Message;
 
 type Tx = UnboundedSender<Message>;
 //TODO change this to use the UserConn
-type PeerMap = Arc<Mutex<HashMap<SocketAddr, Tx>>>;
+type PeerMap = Arc<Mutex<HashMap<UserConn, Tx>>>;
 
+#[derive(Hash, Eq, PartialEq, Clone, Debug)]
 struct UserConn {
     id: String,
-    name: String,
     addr: SocketAddr,
 }
 
@@ -34,38 +39,23 @@ async fn handle_connection(
         .expect("Error during the websocket handshake occurred");
     println!("WebSocket connection established: {}", addr);
 
-    // Insert the write part of this peer to the peer map.
+    let (outgoing, mut incoming) = ws_stream.split();
     // tx=transmit, rx=receive
     let (tx, rx) = unbounded();
 
-    // TODO check how to add the user connection into the map (look up the user after the first message) and do not add them after the first time again
-    peer_map.lock().unwrap().insert(addr, tx);
+    tokio::spawn(rx.map(Ok).forward(outgoing));
 
-    let (outgoing, incoming) = ws_stream.split();
-
-    let broadcast_incoming = incoming.try_for_each(|msg| {
-        println!("Received a message from {}: {}", addr, msg.to_text().unwrap());
-        let peers = peer_map.lock().unwrap();
-
-        // We want to broadcast the message to everyone except ourselves.
-        let broadcast_recipients =
-            peers.iter().filter(|(peer_addr, _)| peer_addr != &&addr).map(|(_, ws_sink)| ws_sink);
-
-        for recp in broadcast_recipients {
-            recp.unbounded_send(msg.clone()).unwrap();
-        }
-
+    let user_con;
+    if let Some(Ok(first_msg)) = incoming.next().await {
+        let user_msg = handle_message(first_msg);
+        user_con = add_user_conn_to_peers(user_msg.clone(), addr, tx, peer_map.clone());
+        let _ = forward_to_peer(user_msg, peer_map.clone()).unwrap();
+    }
+    let incoming = incoming.try_for_each(|msg| {
+        let ws_msg = handle_message(msg);
+        let _ = forward_to_peer(ws_msg, peer_map.clone()).unwrap();
         future::ok(())
     });
-
-    let receive_from_others = rx.map(Ok).forward(outgoing);
-
-
-    pin_mut!(broadcast_incoming, receive_from_others);
-    future::select(broadcast_incoming, receive_from_others).await;
-
-    println!("{} disconnected", &addr);
-    peer_map.lock().unwrap().remove(&addr);
 }
 
 #[tokio::main]
@@ -84,4 +74,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+}
+
+fn handle_message(msg: Message) -> WsMessage {
+    match msg {
+        Message::Text(text) => serde_json::from_str(&text).expect("not valid JSON"),
+        _ => panic!("not a text message"),
+    }
+}
+
+fn add_user_conn_to_peers(msg: WsMessage, addr: SocketAddr, tx: Tx, peer_map: PeerMap) -> UserConn {
+    let user_con = UserConn {
+        id: msg.meta.sender_id.clone(),
+        addr,
+    };
+    let user_con_clone = user_con.clone();
+    println!("Added user: {:?}", user_con);
+    peer_map.lock().unwrap().insert(user_con, tx);
+
+    user_con_clone
+}
+
+fn forward_to_peer(msg: WsMessage, peer_map: PeerMap) -> Result<(), String> {
+    // 1) Grab the lock and clone out the target's Tx (if any)
+    let maybe_tx = {
+        let peers = peer_map.lock().unwrap();
+        peers
+            .iter()
+            .find(|(conn, _)| conn.id == msg.payload.target_id)
+            .map(|(_, tx)| tx.clone())
+    };
+
+    // 2) If we found them, serialize & send; otherwise error
+    if let Some(tx) = maybe_tx {
+        // Serialize your WsMessage back to JSON text
+        let text = to_string(&msg).map_err(|e| format!("JSON serialize error: {}", e))?;
+        print!("sent {:?} to {:?}", text.clone(), msg.payload.target_id);
+        tx.unbounded_send(Message::text(text))
+            .map_err(|e| format!("Send error: {}", e))?;
+        Ok(())
+    } else {
+        Err("Target not connected".into())
+    }
 }
