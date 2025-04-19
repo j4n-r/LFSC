@@ -2,12 +2,11 @@ mod db;
 use std::{
     collections::HashMap,
     env,
-    future::Future,
     net::SocketAddr,
     sync::{Arc, Mutex},
 };
 
-use db::WsMessage;
+use db::{IdMessage, WsMessage};
 use futures_channel::mpsc::{unbounded, UnboundedSender};
 use futures_util::{future, pin_mut, stream::TryStreamExt, StreamExt};
 
@@ -17,7 +16,6 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::tungstenite::protocol::Message;
 
 type Tx = UnboundedSender<Message>;
-//TODO change this to use the UserConn
 type PeerMap = Arc<Mutex<HashMap<UserConn, Tx>>>;
 
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]
@@ -32,30 +30,35 @@ async fn handle_connection(
     raw_stream: TcpStream,
     addr: SocketAddr,
 ) {
-    println!("Incoming TCP connection from: {}", addr);
-
     let ws_stream = tokio_tungstenite::accept_async(raw_stream)
         .await
         .expect("Error during the websocket handshake occurred");
     println!("WebSocket connection established: {}", addr);
 
     let (outgoing, mut incoming) = ws_stream.split();
-    // tx=transmit, rx=receive
+    // tx=transmit, rx=receive (between async tokio tasks)
     let (tx, rx) = unbounded();
 
     tokio::spawn(rx.map(Ok).forward(outgoing));
 
-    let user_con;
+    let mut user_con: Option<UserConn> = None;
     if let Some(Ok(first_msg)) = incoming.next().await {
-        let user_msg = handle_message(first_msg);
-        user_con = add_user_conn_to_peers(user_msg.clone(), addr, tx, peer_map.clone());
-        let _ = forward_to_peer(user_msg, peer_map.clone()).unwrap();
+        let user_msg = handle_id_message(first_msg);
+        user_con = Some(add_user_conn_to_peers(user_msg.clone(), addr, tx, peer_map.clone()));
     }
-    let incoming = incoming.try_for_each(|msg| {
-        let ws_msg = handle_message(msg);
-        let _ = forward_to_peer(ws_msg, peer_map.clone()).unwrap();
-        future::ok(())
-    });
+    incoming
+        .try_for_each(|msg| {
+            let ws_msg = handle_message(msg);
+            let _ = forward_to_peer(ws_msg, peer_map.clone()).unwrap();
+            future::ok(())
+        })
+        .await
+        .expect("Error processing incoming messages");
+    
+    println!("{} disconnected", &addr);
+    if let Some(user_con) = &user_con {
+        peer_map.lock().unwrap().remove(user_con);
+    }
 }
 
 #[tokio::main]
@@ -76,6 +79,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+fn handle_id_message(msg: Message) -> IdMessage {
+    match msg {
+        Message::Text(text) => serde_json::from_str(&text).expect("not valid JSON"),
+        _ => panic!("not a text message"),
+    }
+}
+
 fn handle_message(msg: Message) -> WsMessage {
     match msg {
         Message::Text(text) => serde_json::from_str(&text).expect("not valid JSON"),
@@ -83,9 +93,9 @@ fn handle_message(msg: Message) -> WsMessage {
     }
 }
 
-fn add_user_conn_to_peers(msg: WsMessage, addr: SocketAddr, tx: Tx, peer_map: PeerMap) -> UserConn {
+fn add_user_conn_to_peers(msg: IdMessage, addr: SocketAddr, tx: Tx, peer_map: PeerMap) -> UserConn {
     let user_con = UserConn {
-        id: msg.meta.sender_id.clone(),
+        id: msg.sender_id.clone(),
         addr,
     };
     let user_con_clone = user_con.clone();
@@ -96,7 +106,6 @@ fn add_user_conn_to_peers(msg: WsMessage, addr: SocketAddr, tx: Tx, peer_map: Pe
 }
 
 fn forward_to_peer(msg: WsMessage, peer_map: PeerMap) -> Result<(), String> {
-    // 1) Grab the lock and clone out the target's Tx (if any)
     let maybe_tx = {
         let peers = peer_map.lock().unwrap();
         peers
@@ -105,11 +114,9 @@ fn forward_to_peer(msg: WsMessage, peer_map: PeerMap) -> Result<(), String> {
             .map(|(_, tx)| tx.clone())
     };
 
-    // 2) If we found them, serialize & send; otherwise error
     if let Some(tx) = maybe_tx {
-        // Serialize your WsMessage back to JSON text
         let text = to_string(&msg).map_err(|e| format!("JSON serialize error: {}", e))?;
-        print!("sent {:?} to {:?}", text.clone(), msg.payload.target_id);
+        println!("sent {:?} to {:?}", &msg.clone(), msg.payload.target_id);
         tx.unbounded_send(Message::text(text))
             .map_err(|e| format!("Send error: {}", e))?;
         Ok(())

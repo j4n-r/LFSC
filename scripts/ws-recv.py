@@ -5,17 +5,9 @@ import websockets
 
 messages = [
     {
-        "messageType": "ChatMessage",
-        "payload": {
-            "targetType": "user",
-            "targetId": "550e8400-e29b-41d4-a716-446655440000",
-            "content": "Hello Bob!",
-        },
-        "meta": {
-            "messageId": "3f8f2e9a-7d1c-4a5f-b321-abcdef123456",
-            "senderId": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-            "timestamp": "2025-04-19T13:00:00Z",
-        },
+        "messageType": "IdMessage",
+        "senderId": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+        "timestamp": "2025-04-19T13:00:00Z",
     },
 ]
 
@@ -41,5 +33,4 @@ async def talk_and_listen():
         recv_task = asyncio.create_task(receive_messages(ws))
         await asyncio.gather(send_task, recv_task)
 
-if __name__ == "__main__":
-    asyncio.run(talk_and_listen())
+asyncio.run(talk_and_listen())

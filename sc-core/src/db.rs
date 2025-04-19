@@ -24,6 +24,15 @@ pub struct WsMessage {
     pub meta: Meta
 }
 
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct IdMessage {
+    pub message_type: MessageType,
+    pub sender_id: String,
+    pub timestamp: String
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Payload {
@@ -64,6 +73,7 @@ pub enum TargetType {
 #[sqlx(rename_all = "lowercase")]  
 pub enum MessageType {
     ChatMessage,
+    IdMessage,
     // ChatTyping,
     // File,
 }
