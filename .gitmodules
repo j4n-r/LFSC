@@ -1,3 +1,6 @@
 [submodule "sc-mobile"]
 	path = sc-mobile
 	url = git@github.com:j4n-r/App-Dev-Android_sc-mobile.git
+[submodule "sc-admin"]
+	path = sc-admin
+	url = git@github.com:j4n-r/FSWD_Admin-Dash.git
