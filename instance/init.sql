@@ -1,7 +1,13 @@
-CREATE TABLE IF NOT EXISTS users (
-    id          TEXT        PRIMARY KEY NOT NULL,
-    username    TEXT                    NOT NULL,
-    created_at  TEXT                    NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+CREATE TABLE users (
+  id  PRIMARY KEY NOT NULL, -- UUID as TEXT
+  email TEXT UNIQUE NOT NULL,
+  username TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  emailVerified BOOLEAN ,
+  name TEXT,
+  image TEXT,
+  updated_at NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  created_at  TEXT                    NOT NULL DEFAULT (CURRENT_TIMESTAMP)
 );
 
 CREATE TABLE IF NOT EXISTS devices (
@@ -27,11 +33,14 @@ CREATE TABLE IF NOT EXISTS messages (
 -- ───────────────────────────────────────────────────────────────────
 -- Sample users
 -- ───────────────────────────────────────────────────────────────────
-INSERT INTO users (id, username, created_at) VALUES
-  ('550e8400-e29b-41d4-a716-446655440000', 'alice', '2025-04-01 09:15:00'),
-  ('d290f1ee-6c54-4b01-90e6-d701748f0851', 'bob',   '2025-04-02 11:30:00'),
-  ('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'carol', '2025-04-03 14:45:00');
-  
+INSERT INTO users (
+  id, email, username, password, emailVerified, name, image, created_at
+) VALUES
+  ('550e8400-e29b-41d4-a716-446655440000', 'alice@example.com', 'alice', 'alicepass', 1, 'Alice', NULL, '2025-04-01 09:15:00'),
+  ('d290f1ee-6c54-4b01-90e6-d701748f0851', 'bob@example.com',   'bob',   'bobpass',   1, 'Bob',   NULL, '2025-04-02 11:30:00'),
+  ('3fa85f64-5717-4562-b3fc-2c963f66afa6', 'carol@example.com', 'carol', 'carolpass', 0, 'Carol', NULL, '2025-04-03 14:45:00');
+
+-- run sc-admin "flask init-db" to create the admin user with hashed password
 
 -- ───────────────────────────────────────────────────────────────────
 -- Sample devices
@@ -45,7 +54,6 @@ INSERT INTO devices (id, user_id, public_key, last_seen) VALUES
       'MIGTAgEAMBMGByqGSM49AgEGCCqGSM49...', '2025-04-09 22:10:00'),
   ('f47ac10b-58cc-4372-a567-0e02b2c3d479', '3fa85f64-5717-4562-b3fc-2c963f66afa6',
       'MIIBCgKCAQEAn+X6Zt1TzJfPFlCqQ0...', '2025-04-11 12:00:00');
-
 
 -- ───────────────────────────────────────────────────────────────────
 -- Sample message_data
