@@ -69,7 +69,7 @@ async fn handle_connection(
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool = Arc::new(SqlitePool::connect(&env::var("DATABASE_URL")?).await?);
-    let addr = "127.0.0.1:8080".to_string();
+    let addr = "192.168.0.240:8080".to_string();
 
     let state = PeerMap::new(Mutex::new(HashMap::new()));
 
@@ -88,7 +88,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn handle_id_message(msg: Message) -> IdMessage {
     match msg {
         Message::Text(text) => serde_json::from_str(&text).expect("not valid JSON"),
-        _ => panic!("not a text message"),
+        _ => panic!("not a text message: {:?}",msg),
     }
 }
 

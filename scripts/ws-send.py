@@ -24,19 +24,23 @@ messages = [
     },
 ]
 
+
 async def send_messages(ws):
     for msg in messages:
         await ws.send(json.dumps(msg))
         await asyncio.sleep(1)
 
+
 async def receive_messages(ws):
     async for incoming in ws:
         print("Received:", incoming)
 
+
 async def talk_and_listen():
-    async with websockets.connect("ws://localhost:8080") as ws:
+    async with websockets.connect("ws://192.168.0.240:8080") as ws:
         send_task = asyncio.create_task(send_messages(ws))
         recv_task = asyncio.create_task(receive_messages(ws))
         await asyncio.gather(send_task, recv_task)
+
 
 asyncio.run(talk_and_listen())

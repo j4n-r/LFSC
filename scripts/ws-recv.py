@@ -20,6 +20,7 @@ async def send_messages(ws):
     except websockets.exceptions.ConnectionClosed:
         print("Send: Connection closed.")
 
+
 async def receive_messages(ws):
     try:
         async for incoming in ws:
@@ -27,10 +28,12 @@ async def receive_messages(ws):
     except websockets.exceptions.ConnectionClosed:
         print("Receive: Connection closed.")
 
+
 async def talk_and_listen():
-    async with websockets.connect("ws://localhost:8080") as ws:
+    async with websockets.connect("ws://192.168.0.240:8080") as ws:
         send_task = asyncio.create_task(send_messages(ws))
         recv_task = asyncio.create_task(receive_messages(ws))
         await asyncio.gather(send_task, recv_task)
+
 
 asyncio.run(talk_and_listen())
