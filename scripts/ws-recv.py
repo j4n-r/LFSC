@@ -1,12 +1,13 @@
-#!usr/bin/env python
-import json
+#!/usr/bin/env python
 import asyncio
+import json
+
 import websockets
 
 messages = [
     {
         "messageType": "IdMessage",
-        "senderId": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+        "senderId": "203170c2-e811-44ba-a24f-a1e57d53b363",
         "timestamp": "2025-04-19T13:00:00Z",
     },
 ]

@@ -30,7 +30,7 @@ async fn handle_connection(
     raw_stream: TcpStream,
     addr: SocketAddr,
 ) {
-    // perform websocket handshae on a accepted connection
+    // perform websocket handshake on a accepted connection
     let ws_stream = tokio_tungstenite::accept_async(raw_stream)
         .await
         .expect("Error during the websocket handshake occurred");
@@ -117,13 +117,13 @@ fn forward_to_peer(msg: WsMessage, peer_map: PeerMap) -> Result<(), String> {
         let peers = peer_map.lock().unwrap();
         peers
             .iter()
-            .find(|(conn, _)| conn.id == msg.payload.target_id)
+            .find(|(conn, _)| conn.id == msg.payload.conversation_id)
             .map(|(_, tx)| tx.clone())
     };
 
     if let Some(tx) = maybe_tx {
         let text = to_string(&msg).map_err(|e| format!("JSON serialize error: {}", e))?;
-        println!("sent {:?} to {:?}", &msg.clone(), msg.payload.target_id);
+        println!("sent {:?} to {:?}", &msg.clone(), msg.payload.conversation_id);
         tx.unbounded_send(Message::text(text))
             .map_err(|e| format!("Send error: {}", e))?;
         Ok(())
@@ -131,3 +131,5 @@ fn forward_to_peer(msg: WsMessage, peer_map: PeerMap) -> Result<(), String> {
         Err("Target not connected".into())
     }
 }
+
+

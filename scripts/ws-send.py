@@ -1,24 +1,25 @@
 #!/usr/bin/env python
 import asyncio
 import json
+
 import websockets
 
 messages = [
     {
         "messageType": "IdMessage",
-        "senderId": "550e8400-e29b-41d4-a716-446655440000",
+        "senderId": "624f76c7-7b46-4309-8207-126317477e88",
         "timestamp": "2025-04-19T13:00:00Z",
     },
     {
         "messageType": "ChatMessage",
         "payload": {
-            "targetType": "user",
-            "targetId": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+            "conversionType": "dm",
+            "conversationId": "c0000000-0000-0000-0000-00000000d001",
             "content": "How are you today?",
         },
         "meta": {
             "messageId": "4a9f3e7b-8c2d-4d6f-b654-abcdef654321",
-            "senderId": "550e8400-e29b-41d4-a716-446655440000",
+            "senderId": "624f76c7-7b46-4309-8207-126317477e88",
             "timestamp": "2025-04-19T13:00:05Z",
         },
     },
