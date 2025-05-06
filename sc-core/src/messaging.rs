@@ -10,11 +10,11 @@ use anyhow::{Context, anyhow};
 
 pub type Tx = tokio::sync::mpsc::UnboundedSender<tungstenite::Message>;
 pub type PeerMap = Arc<Mutex<HashMap<UserConn, Tx>>>;
+pub type WsStream = futures_util::stream::SplitStream<
+    tokio_tungstenite::WebSocketStream<tokio::net::TcpStream>>;
 
 pub async fn handle_messaging(
-    mut ws_stream: futures_util::stream::SplitStream<
-        tokio_tungstenite::WebSocketStream<tokio::net::TcpStream>,
-    >,
+    mut ws_stream: WsStream,  
     peer_map: PeerMap,
 ) -> anyhow::Result<()> {
     while let Some(msg) = ws_stream.next().await {

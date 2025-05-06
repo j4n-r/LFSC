@@ -67,7 +67,7 @@ pub enum ConversationType {
 
 #[derive(sqlx::Type, Deserialize, Serialize, Debug, Clone)]
 #[sqlx(type_name = "TEXT")]
-#[sqlx(rename_all = "lowercase")]
+#[sqlx(rename_all = "camelCase")]
 pub enum MessageType {
     ChatMessage,
     IdMessage,

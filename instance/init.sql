@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS devices (
     last_seen   TEXT        NOT NULL DEFAULT (CURRENT_TIMESTAMP) -- ISO8601 string
 );
 
+-- We do not store the message type here because it only chat messages will get saved
+-- (maybe attachments but these will  be in another table)
 CREATE TABLE IF NOT EXISTS messages (
     id                TEXT    PRIMARY KEY   NOT NULL, -- UUID as TEXT
     sender_id         TEXT    NOT NULL
@@ -124,28 +126,29 @@ INSERT INTO conversation_members
               content, sent_from_client, sent_from_server)
    ───────────────────────────────────────────── */
 INSERT INTO messages
-        (id, sender_id,  conversation_id,    status,
-         content,             sent_from_client,  sent_from_server)
-VALUES  -- DM: admin → test
-        ('m1111111-1111-1111-1111-111111111111',
-         '624f76c7-7b46-4309-8207-126317477e88',
-         'c0000000-0000-0000-0000-00000000d001',
-         'sent',
-         'Hi test, welcome aboard!',
-         '2025-04-15 09:16:00', '2025-04-15 09:16:01'),
+    (id, sender_id, message_type, conversation_id, status,
+     content, sent_from_client, sent_from_server)
+VALUES
+    -- DM: admin → test
+    ('m1111111-1111-1111-1111-111111111111',
+     '624f76c7-7b46-4309-8207-126317477e88',
+     'c0000000-0000-0000-0000-00000000d001',
+     'sent',
+     'Hi test, welcome aboard!',
+     '2025-04-15 09:16:00', '2025-04-15 09:16:01'),
 
-        -- DM: test → admin
-        ('m2222222-2222-2222-2222-222222222222',
-         '203170c2-e811-44ba-a24f-a1e57d53b363',
-         'c0000000-0000-0000-0000-00000000d001',
-         'delivered',
-         'Thanks! Glad to join.',
-         '2025-04-15 09:17:10', '2025-04-15 09:17:11'),
+    -- DM: test → admin
+    ('m2222222-2222-2222-2222-222222222222',
+     '203170c2-e811-44ba-a24f-a1e57d53b363',
+     'c0000000-0000-0000-0000-00000000d001',
+     'delivered',
+     'Thanks! Glad to join.',
+     '2025-04-15 09:17:10', '2025-04-15 09:17:11'),
 
-        -- Group: admin → General
-        ('m3333333-3333-3333-3333-333333333333',
-         '624f76c7-7b46-4309-8207-126317477e88',
-         'c0000000-0000-0000-0000-00000000g001',
-         'sent',
-         'Stand-up starts in 5 min.',
-         '2025-04-15 09:25:00', '2025-04-15 09:25:02');
+    -- Group: admin → General
+    ('m3333333-3333-3333-3333-333333333333',
+     '624f76c7-7b46-4309-8207-126317477e88',
+     'c0000000-0000-0000-0000-00000000g001',
+     'sent',
+     'Stand-up starts in 5 min.',
+     '2025-04-15 09:25:00', '2025-04-15 09:25:02');
