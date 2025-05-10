@@ -12,7 +12,7 @@ use tokio_tungstenite::tungstenite;
 
 #[derive(Serialize, Deserialize)]
 pub struct MessageData {
-    pub id: String,
+    pub id: Option<String>,
     pub sender_id: String,
     pub conversation_id: String,
     pub status: Status,
@@ -46,7 +46,6 @@ pub struct Payload {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Meta {
-    pub message_id: String,
     pub conversation_id: String,
     pub sender_id: String,
     pub timestamp: String, // sent_from_client
@@ -66,9 +65,11 @@ pub async fn handle_message(
         match msg {
             Ok(msg) => {
                 let ws_msg = deserialize_message(msg)?;
+                tracing::debug!("got msg from: {:?}", ws_msg.meta.sender_id);
                 let peer_ids =
                     db::find_conversation_members(pool, ws_msg.meta.conversation_id.clone())
-                        .await.context("findind conversation members failed")?;
+                        .await
+                        .context("findind conversation members failed")?;
 
                 let conv_members: HashMap<UserConn, Tx> = peer_map
                     .lock()
@@ -78,7 +79,7 @@ pub async fn handle_message(
                     .map(|(user_conn, tx)| (user_conn.clone(), tx.clone()))
                     .collect();
 
-                println!("{}",conv_members.clone().into_iter().count());
+                println!("{}", conv_members.clone().into_iter().count());
                 for (user_conn, _) in conv_members.clone() {
                     println!("{:?}", user_conn.id)
                 }
@@ -106,12 +107,9 @@ pub fn deserialize_id_message(msg: tungstenite::Message) -> anyhow::Result<IdMes
 pub fn deserialize_message(msg: tungstenite::Message) -> anyhow::Result<WsMessage> {
     match msg {
         tungstenite::Message::Text(text) => {
-            let desr_msg = serde_json::from_str(&text).context("not valid JSON");
-            println!("Message: {:?}", desr_msg);
-            desr_msg
+            serde_json::from_str(&text).context("not valid JSON")
         }
-
-        _ => Err(anyhow!("not a Text Message")),
+        _ => Err(anyhow::anyhow!("not a Text Message")),
     }
 }
 

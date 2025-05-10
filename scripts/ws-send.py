@@ -15,7 +15,6 @@ messages = [
             "content": "How are you today?",
         },
         "meta": {
-            "messageId": "4a9f3e7b-8c2d-4d6f-b654-abcdef654321",
             "conversationId": "c0000000-0000-0000-0000-00000000d001",  # DM between admin and test
             "senderId": "624f76c7-7b46-4309-8207-126317477e88",
             "timestamp": "2025-04-19T13:00:05Z",

@@ -70,7 +70,7 @@ pub async fn get_user(pool: Arc<SqlitePool>) -> Result<User, sqlx::Error> {
 
 pub async fn save_message(pool: &SqlitePool, msg: messaging::WsMessage) -> Result<messaging::MessageData, sqlx::Error> {
     let msg_data = messaging::MessageData {
-        id: Uuid::new_v4().to_string(),
+        id: Some(Uuid::new_v4().to_string()),
         sender_id: msg.meta.sender_id,
         conversation_id: msg.meta.conversation_id,
         status: Status::Received,
