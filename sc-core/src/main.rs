@@ -14,7 +14,7 @@ struct UserConn {
     id: String,
     addr: std::net::SocketAddr,
 }
-
+#[tracing::instrument]
 async fn handle_connection(
     peer_map: messaging::PeerMap,
     pool: Arc<sqlx::SqlitePool>,
@@ -44,7 +44,7 @@ async fn handle_connection(
     let mut user_con: Option<UserConn> = None;
     // get id from the first message and save the user conn in the peer map
     if let Some(Ok(first_msg)) = ws_stream.next().await {
-        let user_msg = messaging::handle_id_message(first_msg)?;
+        let user_msg = messaging::deserialize_id_message(first_msg)?;
         user_con = Some(messaging::add_user_conn_to_peers(
             user_msg.clone(),
             addr,
@@ -53,7 +53,7 @@ async fn handle_connection(
         ));
     }
     // forward each message after the first to all peers
-    messaging::handle_messaging(ws_stream, peer_map.clone()).await?;
+    messaging::handle_messaging(&pool,ws_stream, peer_map.clone()).await?;
 
     println!("{} disconnected", &addr);
     // remove the connection after the client disconnects
@@ -65,6 +65,10 @@ async fn handle_connection(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // construct a subscriber that prints formatted traces to stdout
+    let subscriber = tracing_subscriber::FmtSubscriber::new();
+    // use that subscriber to process traces emitted after this point
+    tracing::subscriber::set_global_default(subscriber)?;
     let pool = Arc::new(sqlx::SqlitePool::connect(&std::env::var("DATABASE_URL")?).await?);
     let addr = "192.168.0.240:8080".to_string();
 
