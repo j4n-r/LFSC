@@ -35,7 +35,7 @@ async fn handle_connection(
     tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
             if let Err(e) = ws_sink.send(msg).await {
-                eprintln!("WebSocket send error: {:?}", e);
+                println!("WebSocket send error: {:?}", e);
                 break;
             }
         }
@@ -45,6 +45,7 @@ async fn handle_connection(
     // get id from the first message and save the user conn in the peer map
     if let Some(Ok(first_msg)) = ws_stream.next().await {
         let user_msg = messaging::deserialize_id_message(first_msg)?;
+        println!("Id Message: {:?}",user_msg);
         user_con = Some(messaging::add_user_conn_to_peers(
             user_msg.clone(),
             addr,
@@ -53,7 +54,7 @@ async fn handle_connection(
         ));
     }
     // forward each message after the first to all peers
-    messaging::handle_messaging(&pool,ws_stream, peer_map.clone()).await?;
+    messaging::handle_message(&pool,ws_stream, peer_map.clone()).await?;
 
     println!("{} disconnected", &addr);
     // remove the connection after the client disconnects

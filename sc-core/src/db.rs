@@ -117,10 +117,11 @@ pub async fn save_message(pool: &SqlitePool, msg: messaging::WsMessage) -> Resul
 
 pub async fn find_conversation_members(pool: &SqlitePool, conversation_id:String) -> Result<Vec<String>, sqlx::Error> {
     let rows = sqlx::query!(
-        "SELECT conversation_id from conversation_members where conversation_id = ?"
+        "SELECT user_id from conversation_members where conversation_id = ?"
         ,conversation_id)
         .fetch_all(pool)
         .await?;
-    let members = rows.into_iter().map(|row| row.conversation_id).collect();
+    let members = rows.into_iter().map(|row| row.user_id).collect();
+    tracing::debug!("Members for conversation {}: {:?}", conversation_id, members); 
     Ok(members)
 }

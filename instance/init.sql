@@ -126,7 +126,7 @@ INSERT INTO conversation_members
               content, sent_from_client, sent_from_server)
    ───────────────────────────────────────────── */
 INSERT INTO messages
-    (id, sender_id, message_type, conversation_id, status,
+    (id, sender_id,  conversation_id, status,
      content, sent_from_client, sent_from_server)
 VALUES
     -- DM: admin → test
