@@ -60,32 +60,41 @@ pub async fn handle_message(
     pool: &sqlx::SqlitePool,
     mut ws_stream: WsStream,
     peer_map: PeerMap,
+    user_conn: UserConn
 ) -> anyhow::Result<()> {
     while let Some(msg) = ws_stream.next().await {
         match msg {
-            Ok(msg) => {
-                let ws_msg = deserialize_message(msg)?;
-                tracing::debug!("got msg from: {:?}", ws_msg.meta.sender_id);
-                let peer_ids =
-                    db::find_conversation_members(pool, ws_msg.meta.conversation_id.clone())
-                        .await
-                        .context("findind conversation members failed")?;
+            Ok(msg) => match msg {
+                tungstenite::Message::Text(msg) => {
+                    let ws_msg: WsMessage = serde_json::from_str(&msg).context("not valid JSON")?;
+                    tracing::debug!("got msg from: {:?}", ws_msg.meta.sender_id);
+                    let peer_ids =
+                        db::find_conversation_members(pool, ws_msg.meta.conversation_id.clone())
+                            .await
+                            .context("findind conversation members failed")?;
 
-                let conv_members: HashMap<UserConn, Tx> = peer_map
-                    .lock()
-                    .unwrap()
-                    .iter()
-                    .filter(|(user_conn, _)| peer_ids.contains(&user_conn.id))
-                    .map(|(user_conn, tx)| (user_conn.clone(), tx.clone()))
-                    .collect();
+                    let conv_members: HashMap<UserConn, Tx> = peer_map
+                        .lock()
+                        .unwrap()
+                        .iter()
+                        .filter(|(user_conn, _)| peer_ids.contains(&user_conn.id))
+                        .map(|(user_conn, tx)| (user_conn.clone(), tx.clone()))
+                        .collect();
 
-                println!("{}", conv_members.clone().into_iter().count());
-                for (user_conn, _) in conv_members.clone() {
-                    println!("{:?}", user_conn.id)
+                    println!("Conversation members: {}", conv_members.iter().count());
+                    for (user_conn, _) in conv_members.clone() {
+                        println!("{:?}", user_conn.id)
+                    }
+
+                    forward_to_peer(ws_msg, conv_members)?;
                 }
-
-                forward_to_peer(ws_msg, conv_members)?;
-            }
+                tungstenite::Message::Close(_) => {
+                    if let Some(_) = peer_map.lock().unwrap().remove(&user_conn) {
+                        tracing::info!("removed user: {}", user_conn.id)
+                    }
+                }
+                _ => tracing::debug!("not a text or close message")
+            },
             Err(e) => {
                 eprintln!("WebSocket error: {}", e);
                 break;
@@ -102,17 +111,7 @@ pub fn deserialize_id_message(msg: tungstenite::Message) -> anyhow::Result<IdMes
         _ => Err(anyhow!("not a Text Message")),
     }
 }
-
-#[tracing::instrument]
-pub fn deserialize_message(msg: tungstenite::Message) -> anyhow::Result<WsMessage> {
-    match msg {
-        tungstenite::Message::Text(text) => {
-            serde_json::from_str(&text).context("not valid JSON")
-        }
-        _ => Err(anyhow::anyhow!("not a Text Message")),
-    }
-}
-
+// We add connection, and not filter for user ids
 #[tracing::instrument]
 pub fn add_user_conn_to_peers(
     msg: IdMessage,
@@ -124,17 +123,16 @@ pub fn add_user_conn_to_peers(
         id: msg.sender_id.clone(),
         addr,
     };
-    let user_con_clone = user_con.clone();
     println!("Added user: {:?}", user_con);
     // save the user id + address and the corresponding transmitter for the tokio task in the peer map
-    peer_map.lock().unwrap().insert(user_con, tx);
+    peer_map.lock().unwrap().insert(user_con.clone(), tx);
 
     println!("connected Users:");
-    for (user_conn, _) in peer_map.lock().unwrap().clone().into_iter() {
-        println!("{:?}", user_conn)
+    for (user_con, _) in peer_map.lock().unwrap().clone().iter() {
+        println!("{:?}", user_con)
     }
     println!("");
-    user_con_clone
+    user_con
 }
 
 #[tracing::instrument]
@@ -142,7 +140,9 @@ pub fn forward_to_peer(msg: WsMessage, conv_members: HashMap<UserConn, Tx>) -> a
     for (user_conn, tx) in conv_members {
         let text = serde_json::to_string(&msg)?;
         println!("sent {:?} to {:?}", &msg.clone(), user_conn.id);
-        tx.send(tungstenite::Message::text(text))?;
+        if let Err(e) = tx.send(tungstenite::Message::text(text)) {
+            tracing::warn!("Websocket send error: {e}");
+        };
     }
     Ok(())
 }

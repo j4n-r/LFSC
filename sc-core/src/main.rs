@@ -8,7 +8,6 @@ use std::{
 mod db;
 mod messaging;
 
-
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]
 struct UserConn {
     id: String,
@@ -20,7 +19,7 @@ async fn handle_connection(
     pool: Arc<sqlx::SqlitePool>,
     raw_stream: tokio::net::TcpStream,
     addr: std::net::SocketAddr,
-) -> anyhow::Result<()>{
+) -> anyhow::Result<()> {
     // perform websocket handshake on a accepted connection
     let ws_stream = tokio_tungstenite::accept_async(raw_stream)
         .await
@@ -41,25 +40,24 @@ async fn handle_connection(
         }
     });
 
-    let mut user_con: Option<UserConn> = None;
+    let mut user_conn: Option<UserConn> = None;
     // get id from the first message and save the user conn in the peer map
     if let Some(Ok(first_msg)) = ws_stream.next().await {
         let user_msg = messaging::deserialize_id_message(first_msg)?;
-        println!("Id Message: {:?}",user_msg);
-        user_con = Some(messaging::add_user_conn_to_peers(
+        println!("Id Message: {:?}", user_msg);
+        user_conn = Some(messaging::add_user_conn_to_peers(
             user_msg.clone(),
             addr,
             tx,
             peer_map.clone(),
         ));
     }
-    // forward each message after the first to all peers
-    messaging::handle_message(&pool,ws_stream, peer_map.clone()).await?;
 
-    println!("{} disconnected", &addr);
     // remove the connection after the client disconnects
-    if let Some(user_con) = &user_con {
-        peer_map.lock().unwrap().remove(user_con);
+    if let Some(user_conn) = user_conn {
+        // forward each message after the first to all peers
+        messaging::handle_message(&pool, ws_stream, peer_map.clone(), user_conn).await?;
+
     }
     Ok(())
 }
