@@ -41,6 +41,7 @@ pub struct IdMessage {
 #[serde(rename_all = "camelCase")]
 pub struct Payload {
     pub content: String,
+    pub display_name: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -113,12 +114,13 @@ pub fn deserialize_id_message(msg: tungstenite::Message) -> anyhow::Result<IdMes
 }
 // We add connection, and not filter for user ids
 #[tracing::instrument]
-pub fn add_user_conn_to_peers(
+pub async fn add_user_conn_to_peers(
     msg: IdMessage,
     addr: std::net::SocketAddr,
     tx: Tx,
     peer_map: PeerMap,
-) -> UserConn {
+    pool: &sqlx::SqlitePool,
+) -> anyhow::Result<Option<UserConn>> {
     let user_con = UserConn {
         id: msg.sender_id.clone(),
         addr,
@@ -132,7 +134,7 @@ pub fn add_user_conn_to_peers(
         println!("{:?}", user_con)
     }
     println!("");
-    user_con
+    Ok(Some(user_con))
 }
 
 #[tracing::instrument]

@@ -45,19 +45,14 @@ async fn handle_connection(
     if let Some(Ok(first_msg)) = ws_stream.next().await {
         let user_msg = messaging::deserialize_id_message(first_msg)?;
         println!("Id Message: {:?}", user_msg);
-        user_conn = Some(messaging::add_user_conn_to_peers(
-            user_msg.clone(),
-            addr,
-            tx,
-            peer_map.clone(),
-        ));
+        user_conn =
+            messaging::add_user_conn_to_peers(user_msg.clone(), addr, tx, peer_map.clone(), &pool).await?;
     }
 
     // remove the connection after the client disconnects
     if let Some(user_conn) = user_conn {
         // forward each message after the first to all peers
         messaging::handle_message(&pool, ws_stream, peer_map.clone(), user_conn).await?;
-
     }
     Ok(())
 }

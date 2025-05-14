@@ -36,8 +36,8 @@ pub enum MessageType {
 
 #[derive(Serialize, Deserialize)]
 pub struct User {
-    id: String,
-    username: String,
+    pub id: String,
+    pub username: String,
     created_at: String,
 }
 
@@ -53,7 +53,7 @@ pub struct Conversation {
     updated_at: String,
 }
 
-pub async fn get_user(pool: Arc<SqlitePool>) -> Result<User, sqlx::Error> {
+pub async fn get_user(pool: &SqlitePool) -> Result<User, sqlx::Error> {
     let user = sqlx::query_as!(
         User,
         r#"
