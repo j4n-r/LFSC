@@ -1,0 +1,22 @@
+* LFSC todos
+
+** sc-admin [0/3]
+*** TODO add user registration
+**** TODO check for education emails
+*** TODO Routes [0/3] 
+**** TODO /conversations
+***** TODO /conversation/$conv_id/messages
+**** TODO /users
+***** TODO /user/$id/conversations
+get all conversations for a user 
+
+
+** sc-core [0/2]
+*** TODO add message saving
+*** TODO add message buffering
+
+** sc-mobile [0/3] 
+*** TODO fix login with jwt
+> prop axio is needed
+*** TODO change chat message to new format 
+*** TODO all conversations view
