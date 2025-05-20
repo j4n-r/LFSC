@@ -15,6 +15,7 @@ get all conversations for a user
 *** TODO add message saving
 *** TODO add message buffering
 
+ss
 ** sc-mobile [0/3] 
 *** TODO fix login with jwt
 > prop axio is needed

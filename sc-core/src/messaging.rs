@@ -34,6 +34,7 @@ pub struct WsMessage {
 pub struct IdMessage {
     pub message_type: MessageType,
     pub sender_id: String,
+    pub conv_id: String,
     pub timestamp: String,
 }
 
@@ -72,13 +73,13 @@ pub async fn handle_message(
                     let peer_ids =
                         db::find_conversation_members(pool, ws_msg.meta.conversation_id.clone())
                             .await
-                            .context("findind conversation members failed")?;
+                            .context("finding conversation members failed")?;
 
                     let conv_members: HashMap<UserConn, Tx> = peer_map
                         .lock()
                         .unwrap()
                         .iter()
-                        .filter(|(user_conn, _)| peer_ids.contains(&user_conn.id))
+                        .filter(|(user_conn, _)| peer_ids.contains(&user_conn.id) && &ws_msg.meta.conversation_id == &user_conn.conv_id)
                         .map(|(user_conn, tx)| (user_conn.clone(), tx.clone()))
                         .collect();
 
@@ -123,6 +124,7 @@ pub async fn add_user_conn_to_peers(
 ) -> anyhow::Result<Option<UserConn>> {
     let user_con = UserConn {
         id: msg.sender_id.clone(),
+        conv_id: msg.conv_id.clone(),
         addr,
     };
     println!("Added user: {:?}", user_con);

@@ -11,6 +11,7 @@ mod messaging;
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]
 struct UserConn {
     id: String,
+    conv_id:String,
     addr: std::net::SocketAddr,
 }
 #[tracing::instrument]
