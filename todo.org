@@ -1,4 +1,12 @@
 * LFSC todos
++ Let everyone with a student mail login
++ let admin see all of the logged in students
++ let admin put them into conversations (conversations can be created before or while doing it)
++ Studens can only see the groups they are in
++ NO DMs for now 
+
+
+** TODO Change saves message schema  
 
 ** sc-admin [0/3]
 *** TODO add user registration
@@ -9,15 +17,17 @@
 **** TODO /users
 ***** TODO /user/$id/conversations
 get all conversations for a user 
-
-
+**** TODO fetch messages for conv when opening chat
+**** TODO create conversations
 ** sc-core [0/2]
 *** TODO add message saving
-*** TODO add message buffering
+Save all messages
 
-ss
+*** +TODO add message buffering+
+
 ** sc-mobile [0/3] 
 *** TODO fix login with jwt
 > prop axio is needed
 *** TODO change chat message to new format 
 *** TODO all conversations view
+
