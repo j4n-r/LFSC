@@ -65,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // use that subscriber to process traces emitted after this point
     tracing::subscriber::set_global_default(subscriber)?;
     let pool = Arc::new(sqlx::SqlitePool::connect(&std::env::var("DATABASE_URL")?).await?);
-    let addr = "192.168.0.240:8080".to_string();
+    let addr = "0.0.0.0:8080".to_string();
 
     let state = messaging::PeerMap::new(Mutex::new(HashMap::new()));
 
