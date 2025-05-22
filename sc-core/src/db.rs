@@ -10,9 +10,11 @@ use crate::messaging;
 #[sqlx(rename_all = "lowercase")]
 #[serde(rename_all = "camelCase")]
 pub enum Status {
-    Send,
-    Received,
+    Sent,
+    Delivered,
     Bufferred,
+    Buffered,
+    Read
 }
 
 #[derive(sqlx::Type, Deserialize, Serialize, Debug)]
@@ -68,12 +70,13 @@ pub async fn get_user(pool: &SqlitePool) -> Result<User, sqlx::Error> {
     Ok(user)
 }
 
-pub async fn save_message(pool: &SqlitePool, msg: messaging::WsMessage) -> Result<messaging::MessageData, sqlx::Error> {
+
+pub async fn save_message(pool: &SqlitePool, msg: messaging::WsMessage) -> anyhow::Result<()>{
     let msg_data = messaging::MessageData {
         id: Some(Uuid::new_v4().to_string()),
         sender_id: msg.meta.sender_id,
         conversation_id: msg.meta.conversation_id,
-        status: Status::Received,
+        status: Status::Delivered,
         content: msg.payload.content,
         sent_from_client: msg.meta.timestamp,
         sent_from_server: Local::now().naive_utc().to_string(),
@@ -96,7 +99,8 @@ pub async fn save_message(pool: &SqlitePool, msg: messaging::WsMessage) -> Resul
     .execute(pool)
     .await?;
 
-    Ok(msg_data)
+    tracing::debug!("saved message");
+    Ok(())
 }
 
 // pub async fn find_conversation(

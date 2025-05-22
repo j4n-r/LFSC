@@ -62,7 +62,7 @@ pub async fn handle_message(
     pool: &sqlx::SqlitePool,
     mut ws_stream: WsStream,
     peer_map: PeerMap,
-    user_conn: UserConn
+    user_conn: UserConn,
 ) -> anyhow::Result<()> {
     while let Some(msg) = ws_stream.next().await {
         match msg {
@@ -70,6 +70,9 @@ pub async fn handle_message(
                 tungstenite::Message::Text(msg) => {
                     let ws_msg: WsMessage = serde_json::from_str(&msg).context("not valid JSON")?;
                     tracing::debug!("got msg from: {:?}", ws_msg.meta.sender_id);
+                    if let Err(e) = db::save_message(pool, ws_msg.clone()).await {
+                        tracing::error!("Failed to save message: {:?}", e);
+                    }
                     let peer_ids =
                         db::find_conversation_members(pool, ws_msg.meta.conversation_id.clone())
                             .await
@@ -79,7 +82,10 @@ pub async fn handle_message(
                         .lock()
                         .unwrap()
                         .iter()
-                        .filter(|(user_conn, _)| peer_ids.contains(&user_conn.id) && &ws_msg.meta.conversation_id == &user_conn.conv_id)
+                        .filter(|(user_conn, _)| {
+                            peer_ids.contains(&user_conn.id)
+                                && &ws_msg.meta.conversation_id == &user_conn.conv_id
+                        })
                         .map(|(user_conn, tx)| (user_conn.clone(), tx.clone()))
                         .collect();
 
@@ -95,7 +101,7 @@ pub async fn handle_message(
                         tracing::info!("removed user: {}", user_conn.id)
                     }
                 }
-                _ => tracing::debug!("not a text or close message")
+                _ => tracing::debug!("not a text or close message"),
             },
             Err(e) => {
                 eprintln!("WebSocket error: {}", e);
