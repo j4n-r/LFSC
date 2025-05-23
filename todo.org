@@ -9,6 +9,7 @@
 ** TODO Change saves message schema  
 
 ** sc-admin [0/3]
+*** TODO fix chat window overflow 
 *** TODO add user registration
 **** TODO check for education emails
 *** TODO Routes [0/3] 
