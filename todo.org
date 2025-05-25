@@ -8,21 +8,27 @@
 
 ** TODO Change saves message schema  
 
-** sc-admin [0/3]
-*** TODO fix chat window overflow 
-*** TODO add auth check to all routes
-*** TODO add user registration
+** sc-admin [2/4]
+*** DONE fix chat window overflow 
+CLOSED: [2025-05-25 So 18:24]
+*** DONE add auth check to all routes
+CLOSED: [2025-05-25 So 18:24]
+*** TODO add guest user registration
+**** DONE add guest login 
+CLOSED: [2025-05-25 So 18:24]
 **** TODO check for education emails
-*** TODO Routes [0/3] 
+*** TODO Routes [1/4] 
 **** TODO /conversations
 ***** TODO /conversation/$conv_id/messages
 **** TODO /users
 ***** TODO /user/$id/conversations
 get all conversations for a user 
-**** TODO fetch messages for conv when opening chat
+**** DONE fetch messages for conv when opening chat
+CLOSED: [2025-05-25 So 18:05]
 **** TODO create conversations
-** sc-core [0/2]
-*** TODO add message saving
+** sc-core [1/1]
+*** DONE add message saving
+CLOSED: [2025-05-25 So 19:44]
 Save all messages
 
 *** +TODO add message buffering+
