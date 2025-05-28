@@ -8,19 +8,16 @@
   };
 
   outputs =
-    { nixpkgs, flake-utils, ... }:
+    {
+      nixpkgs,
+      flake-utils,
+      self,
+      ...
+    }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        ws-send = pkgs.writeShellApplication {
-          name = "ws-test";
-          text = builtins.readFile ./scripts/ws-send.py;
-        };
-        ws-recv = pkgs.writeShellApplication {
-          name = "ws-recv";
-          text = builtins.readFile ./scripts/ws-recv.py;
-        };
       in
       {
         devShells.default = pkgs.mkShell {
@@ -55,9 +52,16 @@
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
           };
         };
-        packages = {
-          ws-send = ws-send;
-          ws-recv = ws-recv;
+        apps.cargo-build = {
+          type = "app";
+          program =
+            (pkgs.writeShellScript "" ''
+              cd git rev-parse --show-toplevel
+              cd sc-core
+              cargo build --release
+              mkdir -p ../sc-admin/ws-server
+              cp ./target/release/lfsc ../sc-admin/ws-server/lfsc-${system}
+            '').outPath;
         };
       }
     );
