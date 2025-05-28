@@ -71,7 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let try_socket = tokio::net::TcpListener::bind(&addr).await;
     let listener = try_socket.expect("Failed to bind");
-    println!("Listening on: {}", addr);
+    tracing::info!("Listening on: {}", addr);
 
     // spawn new thread for each connection
     while let Ok((stream, addr)) = listener.accept().await {
