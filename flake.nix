@@ -26,6 +26,7 @@
             rustfmt
             clippy
             rustc
+            sqlx-cli
 
             openssl
             pkg-config

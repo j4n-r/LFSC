@@ -37,6 +37,8 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Build release
+        env:
+          SQLX_OFFLINE: true
         run: cargo build --release --target x86_64-apple-darwin
 
       - name: Upload artifacts
