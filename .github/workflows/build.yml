@@ -44,6 +44,6 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: rust-macos-x86_64
-          path: sc-core/target/x86_64-apple-darwin/release/
+          name: core-x86_64-darwin
+          path: sc-core/target/x86_64-apple-darwin/release/lfsc
           retention-days: 30
