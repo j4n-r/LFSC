@@ -84,12 +84,12 @@ pub async fn handle_message(
                         .iter()
                         .filter(|(user_conn, _)| {
                             peer_ids.contains(&user_conn.id)
-                                && &ws_msg.meta.conversation_id == &user_conn.conv_id
+                                && ws_msg.meta.conversation_id == user_conn.conv_id
                         })
                         .map(|(user_conn, tx)| (user_conn.clone(), tx.clone()))
                         .collect();
 
-                    println!("Conversation members: {}", conv_members.iter().count());
+                    println!("Conversation members: {}", conv_members.len());
                     for (user_conn, _) in conv_members.clone() {
                         println!("{:?}", user_conn.id)
                     }
@@ -97,7 +97,7 @@ pub async fn handle_message(
                     forward_to_peer(ws_msg, conv_members)?;
                 }
                 tungstenite::Message::Close(_) => {
-                    if let Some(_) = peer_map.lock().unwrap().remove(&user_conn) {
+                    if peer_map.lock().unwrap().remove(&user_conn).is_some() {
                         tracing::info!("removed user: {}", user_conn.id)
                     }
                 }
@@ -141,7 +141,6 @@ pub async fn add_user_conn_to_peers(
     for (user_con, _) in peer_map.lock().unwrap().clone().iter() {
         println!("{:?}", user_con)
     }
-    println!("");
     Ok(Some(user_con))
 }
 

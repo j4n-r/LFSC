@@ -1,7 +1,6 @@
 use chrono::Local;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
-use std::sync::Arc;
 use uuid::Uuid;
 use crate::messaging;
 
@@ -55,21 +54,6 @@ pub struct Conversation {
     updated_at: String,
 }
 
-pub async fn get_user(pool: &SqlitePool) -> Result<User, sqlx::Error> {
-    let user = sqlx::query_as!(
-        User,
-        r#"
-            SELECT id, username, created_at
-            FROM users
-            ORDER BY created_at DESC
-            "#
-    )
-    .fetch_one(&*pool)
-    .await?;
-
-    Ok(user)
-}
-
 
 pub async fn save_message(pool: &SqlitePool, msg: messaging::WsMessage) -> anyhow::Result<()>{
     let msg_data = messaging::MessageData {
@@ -102,22 +86,6 @@ pub async fn save_message(pool: &SqlitePool, msg: messaging::WsMessage) -> anyho
     tracing::debug!("saved message");
     Ok(())
 }
-
-// pub async fn find_conversation(
-//     pool: &SqlitePool,
-//     conversation_id: String,
-// ) -> Result<Option<Conversation>, sqlx::Error> {
-//     let conversation = sqlx::query_as::<_,Conversation>(
-//         r#"
-// SELECT id, type, owner_id, name, description, image, created_at, updated_at
-// FROM conversations
-// WHERE id = $1
-// "#,
-//     )
-//         .bind(conversation_id).fetch().
-
-//     conversation
-// }
 
 pub async fn find_conversation_members(pool: &SqlitePool, conversation_id:String) -> Result<Vec<String>, sqlx::Error> {
     let rows = sqlx::query!(
