@@ -1,29 +1,24 @@
 name: Build Rust Multi-Platform
-
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main]
-
 jobs:
   build-macos-x86_64:
     runs-on: macos-latest
     defaults:
       run:
         working-directory: sc-core
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           target: x86_64-apple-darwin
           override: true
-
       - name: Cache cargo registry
         uses: actions/cache@v3
         with:
@@ -34,15 +29,12 @@ jobs:
           key: ${{ runner.os }}-x86_64-cargo-${{ hashFiles('sc-core/**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-x86_64-cargo-
-
       - name: Build release
         env:
           SQLX_OFFLINE: true
         run: cargo build --release --target x86_64-apple-darwin
-
       - name: Rename binary
         run: cp target/x86_64-apple-darwin/release/lfsc target/x86_64-apple-darwin/release/core-x86_64-darwin
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -55,18 +47,15 @@ jobs:
     defaults:
       run:
         working-directory: sc-core
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           target: aarch64-apple-darwin
           override: true
-
       - name: Cache cargo registry
         uses: actions/cache@v3
         with:
@@ -77,15 +66,12 @@ jobs:
           key: ${{ runner.os }}-aarch64-cargo-${{ hashFiles('sc-core/**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-aarch64-cargo-
-
       - name: Build release
         env:
           SQLX_OFFLINE: true
         run: cargo build --release --target aarch64-apple-darwin
-
       - name: Rename binary
         run: cp target/aarch64-apple-darwin/release/lfsc target/aarch64-apple-darwin/release/core-aarch64-darwin
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -98,18 +84,17 @@ jobs:
     defaults:
       run:
         working-directory: sc-core
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-          target: x86_64-unknown-linux-gnu
+          target: x86_64-unknown-linux-musl # Changed to musl for static linking
           override: true
-
+      - name: Install musl tools
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
       - name: Cache cargo registry
         uses: actions/cache@v3
         with:
@@ -117,21 +102,18 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             sc-core/target
-          key: ${{ runner.os }}-x86_64-cargo-${{ hashFiles('sc-core/**/Cargo.lock') }}
+          key: ${{ runner.os }}-x86_64-musl-cargo-${{ hashFiles('sc-core/**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-x86_64-cargo-
-
+            ${{ runner.os }}-x86_64-musl-cargo-
       - name: Build release
         env:
           SQLX_OFFLINE: true
-        run: cargo build --release --target x86_64-unknown-linux-gnu
-
+        run: cargo build --release --target x86_64-unknown-linux-musl
       - name: Rename binary
-        run: cp target/x86_64-unknown-linux-gnu/release/lfsc target/x86_64-unknown-linux-gnu/release/core-x86_64-linux
-
+        run: cp target/x86_64-unknown-linux-musl/release/lfsc target/x86_64-unknown-linux-musl/release/core-x86_64-linux
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: core-x86_64-linux
-          path: sc-core/target/x86_64-unknown-linux-gnu/release/core-x86_64-linux
+          path: sc-core/target/x86_64-unknown-linux-musl/release/core-x86_64-linux
           retention-days: 30
