@@ -1,4 +1,4 @@
-# LFSC - Learning-Focused Student Chat
+# LFSC
 
 A university project demonstrating a web-based chat platform concept for academic environments. 
 
