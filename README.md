@@ -1,6 +1,6 @@
 # LFSC
 
-A university project demonstrating a web-based chat platform concept for academic environments. 
+A chat app for university.
 
 ## Architecture
 
