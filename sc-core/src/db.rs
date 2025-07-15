@@ -8,18 +8,6 @@ use crate::messaging;
 #[sqlx(type_name = "TEXT")]
 #[sqlx(rename_all = "lowercase")]
 #[serde(rename_all = "camelCase")]
-pub enum Status {
-    Sent,
-    Delivered,
-    Bufferred,
-    Buffered,
-    Read
-}
-
-#[derive(sqlx::Type, Deserialize, Serialize, Debug)]
-#[sqlx(type_name = "TEXT")]
-#[sqlx(rename_all = "lowercase")]
-#[serde(rename_all = "camelCase")]
 pub enum ConversationType {
     Dm,
     Group,
@@ -60,7 +48,6 @@ pub async fn save_message(pool: &SqlitePool, msg: messaging::WsMessage) -> anyho
         id: Some(Uuid::new_v4().to_string()),
         sender_id: msg.meta.sender_id,
         conversation_id: msg.meta.conversation_id,
-        status: Status::Delivered,
         content: msg.payload.content,
         sent_from_client: msg.meta.timestamp,
         sent_from_server: Local::now().naive_utc().to_string(),
@@ -69,13 +56,12 @@ pub async fn save_message(pool: &SqlitePool, msg: messaging::WsMessage) -> anyho
     sqlx::query!(
         r#"
         INSERT INTO messages (
-            id, sender_id,  conversation_id, status, content, sent_from_client, sent_from_server
-        ) VALUES (?, ?, ?,  ?, ?, ?, ?)
+            id, sender_id,  conversation_id,  content, sent_from_client, sent_from_server
+        ) VALUES (?,  ?,  ?, ?, ?, ?)
         "#,
         msg_data.id,
         msg_data.sender_id,
         msg_data.conversation_id,
-        msg_data.status,
         msg_data.content,
         msg_data.sent_from_client,
         msg_data.sent_from_server,

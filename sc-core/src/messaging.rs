@@ -1,5 +1,5 @@
 use crate::db;
-use crate::db::{MessageType, Status};
+use crate::db::MessageType;
 use crate::UserConn;
 use anyhow::{anyhow, Context};
 use serde::{Deserialize, Serialize};
@@ -15,7 +15,6 @@ pub struct MessageData {
     pub id: Option<String>,
     pub sender_id: String,
     pub conversation_id: String,
-    pub status: Status,
     pub content: String,
     pub sent_from_client: String,
     pub sent_from_server: String,

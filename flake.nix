@@ -49,7 +49,7 @@
             fi
           '';
           env = {
-            DATABASE_URL = "sqlite:../instance/dev.sqlite3"; # relative path from sc-core/
+            DATABASE_URL = "sqlite:../sc-admin/instance/db.sqlite3"; # relative path from sc-core/
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
           };
         };
